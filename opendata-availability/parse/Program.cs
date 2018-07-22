@@ -13,10 +13,10 @@ namespace parse
             var sites = new List<string>
             {
                 @"https://www.minfin.ru",
-                @"http://roskazna.ru",
-                @"http://nalog.ru",
-                @"http://www.customs.ru",
-                @"http://www.fsrar.ru"
+                //@"http://roskazna.ru",
+                //@"http://nalog.ru",
+                //@"http://www.customs.ru",
+                //@"http://www.fsrar.ru"
             };
 
             foreach (var site in sites)
@@ -56,11 +56,31 @@ namespace parse
 
                     var dataPage = site + href;
                     var htmlWeb = new HtmlWeb();
-                    //var htmlDoc = htmlWeb.Load(dataPage);
-                    //
-                    //var dataFile = htmlDoc.DocumentNode.SelectSingleNode()
-
+                    var htmlDataPage = htmlWeb.Load(dataPage);
+                    var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
                     Console.WriteLine(dataPage);
+                    if (dataLink != null)
+                        Console.WriteLine(dataLink.GetAttributeValue("href", string.Empty));
+                    Console.WriteLine();
+                    /*
+                    var dataRows = from tr in htmlDataPage.DocumentNode.SelectNodes("//tr")
+                                   let innerText = tr.InnerText.ToLower()
+                                   where innerText.Contains("гиперссылка")
+                                   select tr;
+                    var dataLinks = new List<HtmlNode>();
+                    foreach (var row in dataRows)
+                    {
+                        var a = row.Descendants("a").FirstOrDefault();
+                        if (a != null)
+                            dataLinks.Add(a);
+                    }*/
+                    Console.WriteLine(dataPage);
+                    Console.WriteLine();
+                    //foreach (var link in dataLinks)
+                    //    Console.WriteLine(link.GetAttributeValue("href", string.Empty));
+                    
+
+                    
                 }
                 Console.WriteLine(links.Count());
             }
