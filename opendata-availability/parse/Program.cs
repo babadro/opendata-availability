@@ -12,8 +12,8 @@ namespace parse
         {
             var sites = new List<string>
             {
-                @"https://www.minfin.ru",
-                //@"http://roskazna.ru",
+                //@"https://www.minfin.ru",
+                @"http://roskazna.ru",
                 //@"http://nalog.ru",
                 //@"http://www.customs.ru",
                 //@"http://www.fsrar.ru"
@@ -35,8 +35,10 @@ namespace parse
                     Console.WriteLine("talbe not found");
                     return;
                 }
-                    
-                var rows = table.Descendants("tr");
+
+                var rows = table.Descendants("tr").ToList();
+                if (rows.Count > 0)
+                    rows.RemoveAt(0); // Delete header of table
 
                 var links = new List<HtmlNode>();
                 foreach (var row in rows)
@@ -45,8 +47,9 @@ namespace parse
                     if (a != null)
                         links.Add(a);
                 }
-                    //.Where(a => a.GetAttributeValue("href", "").Contains("opendata"));
+                //.Where(a => a.GetAttributeValue("href", "").Contains("opendata"));
 
+                var dataLinkCount = 0;
                 foreach (var n in links)
                 {
                     //Console.WriteLine(n.GetAttributeValue("href", "not-found"));
@@ -60,7 +63,11 @@ namespace parse
                     var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
                     Console.WriteLine(dataPage);
                     if (dataLink != null)
+                    {
                         Console.WriteLine(dataLink.GetAttributeValue("href", string.Empty));
+                        dataLinkCount++;
+                    }
+                        
                     Console.WriteLine();
                     /*
                     var dataRows = from tr in htmlDataPage.DocumentNode.SelectNodes("//tr")
@@ -74,8 +81,6 @@ namespace parse
                         if (a != null)
                             dataLinks.Add(a);
                     }*/
-                    Console.WriteLine(dataPage);
-                    Console.WriteLine();
                     //foreach (var link in dataLinks)
                     //    Console.WriteLine(link.GetAttributeValue("href", string.Empty));
                     
@@ -83,6 +88,7 @@ namespace parse
                     
                 }
                 Console.WriteLine(links.Count());
+                Console.WriteLine(dataLinkCount);
             }
             
             Console.ReadLine();
