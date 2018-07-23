@@ -93,5 +93,50 @@ namespace parse
             Console.WriteLine(dataLinkCount);
             Console.WriteLine(structrueDescrCount);
         }
+
+        public static async Task DataPageProcessing(HtmlNode n, string site)
+        {
+            var href = n.GetAttributeValue("href", string.Empty);
+            if (href == string.Empty)
+                return;
+
+            var dataPage = site + href;
+            var htmlWeb = new HtmlWeb();
+            var htmlDataPage = await htmlWeb.LoadFromWebAsync(dataPage);
+            var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
+            Console.WriteLine(dataPage);
+            if (dataLink != null)
+            {
+                Console.WriteLine(dataLink.GetAttributeValue("href", string.Empty));
+                dataLinkCount++;
+            }
+
+            var structureDescrLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
+            {
+                return tr.Descendants("td").FirstOrDefault(td =>
+                {
+                    var tdInnerText = td.InnerText.ToLower();
+                    return tdInnerText.Contains("описан") && tdInnerText.Contains("структур") && tdInnerText.Contains("данн");
+                }) != null;
+            })?.Descendants("a").FirstOrDefault();
+
+            if (structureDescrLink != null)
+            {
+                Console.WriteLine(structureDescrLink.GetAttributeValue("href", string.Empty));
+                structrueDescrCount++;
+            }
+            else
+            {
+                var descr = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
+                {
+                    var innerText = tr.InnerText.ToLower();
+                    return innerText.Contains("описан") && innerText.Contains("структур") &&
+                           innerText.Contains("данн");
+                });
+                var a_s = descr.Descendants("a");
+                var temp = 1;
+            }
+            Console.WriteLine();
+        }
     }
 }
