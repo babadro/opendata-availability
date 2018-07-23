@@ -94,11 +94,14 @@ namespace parse
             Console.WriteLine(structrueDescrCount);
         }
 
-        public static async Task DataPageProcessing(HtmlNode n, string site)
+        public static async Task<(bool dataValid, bool structureValid)> DataPageProcessing(HtmlNode n, string site)
         {
             var href = n.GetAttributeValue("href", string.Empty);
             if (href == string.Empty)
-                return;
+                return (false, false);
+
+            var dataValid = false;
+            var structureValid = false;
 
             var dataPage = site + href;
             var htmlWeb = new HtmlWeb();
@@ -108,7 +111,7 @@ namespace parse
             if (dataLink != null)
             {
                 Console.WriteLine(dataLink.GetAttributeValue("href", string.Empty));
-                dataLinkCount++;
+                dataValid = true;
             }
 
             var structureDescrLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
@@ -123,7 +126,7 @@ namespace parse
             if (structureDescrLink != null)
             {
                 Console.WriteLine(structureDescrLink.GetAttributeValue("href", string.Empty));
-                structrueDescrCount++;
+                structureValid = true;
             }
             else
             {
@@ -137,6 +140,7 @@ namespace parse
                 var temp = 1;
             }
             Console.WriteLine();
+            return (dataValid, structureValid);
         }
     }
 }
