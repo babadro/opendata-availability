@@ -15,6 +15,7 @@ namespace parse
             var htmlDoc = await web.LoadFromWebAsync(site + @"/opendata");
 
             var tables = from tbl in htmlDoc.DocumentNode.SelectNodes("//table")
+                         where tbl != null
                          let innerText = tbl.InnerText.ToLower()
                          where innerText.Contains("набор") && innerText.Contains("данных")
                          select tbl;
@@ -40,73 +41,57 @@ namespace parse
                 if (a != null)
                     links.Add(a);
             }
-            //.Where(a => a.GetAttributeValue("href", "").Contains("opendata"));
 
             var dataLinkCount = 0;
             var structrueDescrCount = 0;
-            foreach (var n in links)
+
+            var tasks = new Task<(bool, bool)>[links.Count];
+            for (var i = 0; i < links.Count; i++)
+                tasks[i] = DataPageProcessing(links[i], site);
+
+            try
             {
-                //Console.WriteLine(n.GetAttributeValue("href", "not-found"));
-                var href = n.GetAttributeValue("href", string.Empty);
-                if (href == string.Empty)
-                    continue;
-
-                var dataPage = site + href;
-                var htmlWeb = new HtmlWeb();
-                var htmlDataPage = await htmlWeb.LoadFromWebAsync(dataPage);
-                var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
-                Console.WriteLine(dataPage);
-                if (dataLink != null)
-                {
-                    Console.WriteLine(dataLink.GetAttributeValue("href", string.Empty));
-                    dataLinkCount++;
-                }
-
-                var structureDescrLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
-                {
-                    return tr.Descendants("td").FirstOrDefault(td =>
-                    {
-                        var tdInnerText = td.InnerText.ToLower();
-                        return tdInnerText.Contains("описан") && tdInnerText.Contains("структур") && tdInnerText.Contains("данн");
-                    }) != null;
-                })?.Descendants("a").FirstOrDefault();
-
-                if (structureDescrLink != null)
-                {
-                    Console.WriteLine(structureDescrLink.GetAttributeValue("href", string.Empty));
-                    structrueDescrCount++;
-                }
-                else
-                {
-                    var descr = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
-                    {
-                        var innerText = tr.InnerText.ToLower();
-                        return innerText.Contains("описан") && innerText.Contains("структур") &&
-                               innerText.Contains("данн");
-                    });
-                    var a_s = descr.Descendants("a");
-                    var temp = 1;
-                }
-                Console.WriteLine();
+                Task.WaitAll(tasks);
             }
+            catch (AggregateException e)
+            {
+                Console.WriteLine("\nThe following exceptions have been thrown by WaitAll(): (THIS WAS EXPECTED)");
+                for (int j = 0; j < e.InnerExceptions.Count; j++)
+                {
+                    Console.WriteLine("\n-------------------------------------------------\n{0}", e.InnerExceptions[j].ToString());
+                }
+            }
+            
+            foreach (var t in tasks)
+            {
+                var result = await t;
+                if (result.Item1)
+                    dataLinkCount++;
+                if (result.Item2)
+                    structrueDescrCount++;
+            }
+            
+
             Console.WriteLine(links.Count);
             Console.WriteLine(dataLinkCount);
             Console.WriteLine(structrueDescrCount);
         }
 
-        public static async Task<(bool dataValid, bool structureValid)> DataPageProcessing(HtmlNode n, string site)
+        public static async Task<(bool dataValid, bool structureValid, string tag, string href)> DataPageProcessing(HtmlNode n, string site)
         {
+            var tag = n.OuterHtml;
             var href = n.GetAttributeValue("href", string.Empty);
             if (href == string.Empty)
-                return (false, false);
+                return (false, false, "", tag);
 
             var dataValid = false;
             var structureValid = false;
+            
 
             var dataPage = site + href;
             var htmlWeb = new HtmlWeb();
             var htmlDataPage = await htmlWeb.LoadFromWebAsync(dataPage);
-            var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
+            var dataLink = htmlDataPage.DocumentNode.SelectNodes("//tr")?.FirstOrDefault(tr => tr.InnerText.ToLower().Contains("гиперссылка"))?.Descendants("a").FirstOrDefault();
             Console.WriteLine(dataPage);
             if (dataLink != null)
             {
@@ -114,7 +99,7 @@ namespace parse
                 dataValid = true;
             }
 
-            var structureDescrLink = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
+            var structureDescrLink = htmlDataPage.DocumentNode.SelectNodes("//tr")?.FirstOrDefault(tr =>
             {
                 return tr.Descendants("td").FirstOrDefault(td =>
                 {
@@ -130,17 +115,17 @@ namespace parse
             }
             else
             {
-                var descr = htmlDataPage.DocumentNode.SelectNodes("//tr").FirstOrDefault(tr =>
+                var descr = htmlDataPage.DocumentNode.SelectNodes("//tr")?.FirstOrDefault(tr =>
                 {
                     var innerText = tr.InnerText.ToLower();
                     return innerText.Contains("описан") && innerText.Contains("структур") &&
                            innerText.Contains("данн");
                 });
-                var a_s = descr.Descendants("a");
+                var a_s = descr?.Descendants("a");
                 var temp = 1;
             }
             Console.WriteLine();
-            return (dataValid, structureValid);
+            return (dataValid, structureValid, "",  "");
         }
     }
 }
